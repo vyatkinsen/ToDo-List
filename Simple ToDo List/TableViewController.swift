@@ -1,15 +1,9 @@
-//
-//  TableViewController.swift
-//  Simple ToDo List
-//
-//  Created by Арсений Вяткин on 04.11.2023.
-//
-
 import UIKit
+import CoreData
 
 class TableViewController: UITableViewController {
     // MARK: - Properties
-    var tasks: [String] = []
+    var tasks: [Task] = []
 
     // MARK: - IBActions
     @IBAction func saveTask(_ sender: UIBarButtonItem) {
@@ -17,10 +11,8 @@ class TableViewController: UITableViewController {
         let saveAction = UIAlertAction(title: "Save", style: .default) { action in
             let textField = alertController.textFields?.first
             if let newTask = textField?.text {
-                self.tasks.insert(newTask, at: 0)
-                DispatchQueue.main.async {
-                    self.tableView.reloadData()
-                }
+                self.saveTask(withTitle: newTask)
+                self.tableView.reloadData()
             }
         }
         alertController.addTextField { _ in }
@@ -47,8 +39,25 @@ class TableViewController: UITableViewController {
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "MyCell", for: indexPath)
-        cell.textLabel?.text = tasks[indexPath.row]
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
+        cell.textLabel?.text = tasks[indexPath.row].title
         return cell
+    }
+    
+    private func saveTask(withTitle title: String) {
+        let appDelegate = UIApplication.shared.delegate as! AppDelegate
+        let context = appDelegate.persistentContainer.viewContext
+        
+        guard let entity = NSEntityDescription.entity(forEntityName: "Task", in: context) else { return }
+        
+        let taskObject = Task(entity: entity, insertInto: context)
+        
+        taskObject.title = title
+        
+        do {
+            try context.save()
+        } catch let error as NSError {
+            print(error.localizedDescription)
+        }
     }
 }
