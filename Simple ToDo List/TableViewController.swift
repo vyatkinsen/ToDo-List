@@ -23,6 +23,37 @@ class TableViewController: UITableViewController {
         present(alertController, animated: true, completion: nil)
     }
     
+    @IBAction func deleteAllTasks(_ sender: UIBarButtonItem) {
+        let context = getContext()
+        let fetchRequest: NSFetchRequest<Task> = Task.fetchRequest()
+        if let objects = try? context.fetch(fetchRequest) {
+            for object in objects {
+                context.delete(object)
+            }
+        }
+        tasks.removeAll()
+        do {
+            try context.save()
+            self.tableView.reloadData()
+        } catch let error as NSError {
+            print(error.localizedDescription)
+        }
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        let context = getContext()
+        let fetchRequest: NSFetchRequest<Task> = Task.fetchRequest()
+        let sortDescriptor = NSSortDescriptor(key: "title", ascending: false)
+        fetchRequest.sortDescriptors = [sortDescriptor]
+        
+        do {
+            tasks = try context.fetch(fetchRequest)
+        } catch let error as NSError {
+            print(error.localizedDescription)
+        }
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -44,9 +75,13 @@ class TableViewController: UITableViewController {
         return cell
     }
     
-    private func saveTask(withTitle title: String) {
+    private func getContext() -> NSManagedObjectContext {
         let appDelegate = UIApplication.shared.delegate as! AppDelegate
-        let context = appDelegate.persistentContainer.viewContext
+        return appDelegate.persistentContainer.viewContext
+    }
+    
+    private func saveTask(withTitle title: String) {
+        let context = getContext()
         
         guard let entity = NSEntityDescription.entity(forEntityName: "Task", in: context) else { return }
         
@@ -56,6 +91,7 @@ class TableViewController: UITableViewController {
         
         do {
             try context.save()
+            tasks.append(taskObject)
         } catch let error as NSError {
             print(error.localizedDescription)
         }
